@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DENZ XITERZ DRAGGABLE</title>
+    <style>
+        :root { --main: #bc13fe; --bg: #050505; --card: #121212; --text: #ffffff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Arial', sans-serif; }
+        
+        body {
+            background-color: transparent;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+        }
+
+        /* LINGKARAN FOV */
+        #fov-ring {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--main);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+            z-index: 999;
+        }
+
+        /* FLOATING ICON (BISA DIGESER) */
+        #menu-icon {
+            position: fixed;
+            top: 100px; left: 20px;
+            width: 65px; height: 65px;
+            border-radius: 50%;
+            border: 3px solid var(--main);
+            background-color: var(--card);
+            background-image: url('file:///android_asset/logo_mod.png');
+            background-size: cover;
+            background-position: center;
+            z-index: 9999;
+            box-shadow: 0 0 15px var(--main);
+            touch-action: none; /* Penting biar gak konflik ama scroll browser */
+        }
+
+        /* MENU UTAMA */
+        #menu-main {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 90%; max-width: 350px;
+            max-height: 80vh;
+            background-color: var(--bg);
+            border: 2px solid var(--main);
+            border-radius: 15px;
+            padding: 15px;
+            overflow-y: auto;
+            z-index: 10000;
+            transition: 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #menu-main.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
+
+        .header { text-align: center; border-bottom: 2px solid var(--main); margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .item { background: var(--card); padding: 10px; border-radius: 10px; border: 1px solid #333; text-align: center; font-size: 11px; }
+        .slider-box { grid-column: span 2; background: var(--card); padding: 10px; border-radius: 10px; border: 1px solid var(--main); margin: 5px 0; }
+        input[type=range] { width: 100%; accent-color: var(--main); }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        input:checked + .slider-toggle { background-color: var(--main); }
+    </style>
+</head>
+<body>
+
+    <div id="fov-ring"></div>
+
+    <div id="menu-icon"></div>
+
+    <div id="menu-main">
+        <div class="header">
+            <h1 style="font-size: 18px; color: var(--main);">DENZ XITERZ V4</h1>
+        </div>
+        <div class="grid">
+            <div class="slider-box">
+                <label>AIM FOV: <span id="fov-val">50</span>%</label>
+                <input type="range" id="fov-slider" min="1" max="100" value="50" oninput="updateFov(this.value)">
+            </div>
+            <div class="item">Aim FOV <br><label class="switch"><input type="checkbox" onchange="toggleFov(this)"><span class="slider-toggle"></span></label></div>
+            <div class="item">Aim Lock <br><label class="switch"><input type="checkbox"><span class="slider-toggle"></span></label></div>
+            <div class="item">Antena <br><label class="switch"><input type="checkbox"><span class="slider-toggle"></span></label></div>
+            <div class="item">Speed <br><label class="switch"><input type="checkbox"><span class="slider-toggle"></span></label></div>
+        </div>
+        <button onclick="toggleMenu()" style="width:100%; margin-top:10px; background:var(--main); border:none; color:white; padding:5px; border-radius:5px;">CLOSE</button>
+    </div>
+
+    <script>
+        const icon = document.getElementById('menu-icon');
+        const menu = document.getElementById('menu-main');
+        const ring = document.getElementById('fov-ring');
+
+        let isDragging = false;
+        let startX, startY;
+
+        // 1. LOGIC GESER (DRAGGABLE)
+        icon.addEventListener('touchstart', (e) => {
+            isDragging = false;
+            startX = e.touches[0].clientX - icon.offsetLeft;
+            startY = e.touches[0].clientY - icon.offsetTop;
+        });
+
+        icon.addEventListener('touchmove', (e) => {
+            isDragging = true;
+            let x = e.touches[0].clientX - startX;
+            let y = e.touches[0].clientY - startY;
+
+            // Batasin biar gak keluar layar
+            x = Math.max(0, Math.min(x, window.innerWidth - icon.offsetWidth));
+            y = Math.max(0, Math.min(y, window.innerHeight - icon.offsetHeight));
+
+            icon.style.left = x + 'px';
+            icon.style.top = y + 'px';
+        });
+
+        icon.addEventListener('touchend', () => {
+            if (!isDragging) {
+                toggleMenu(); // Kalau cuma ditekan (gak digeser), buka menu
+            }
+        });
+
+        function toggleMenu() {
+            menu.classList.toggle('open');
+            if(navigator.vibrate) navigator.vibrate(30);
+        }
+
+        function updateFov(val) {
+            document.getElementById('fov-val').innerText = val;
+            let size = val * 5; 
+            ring.style.width = size + "px";
+            ring.style.height = size + "px";
+        }
+
+        function toggleFov(obj) {
+            ring.style.display = obj.checked ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
